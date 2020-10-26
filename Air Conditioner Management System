@@ -1,0 +1,78 @@
+/* rawSend.ino Example sketch for IRLib2
+    Illustrates how to send a code Using raw timings which were captured
+    from the "rawRecv.ino" sample sketch.  Load that sketch and
+    capture the values. They will print in the serial monitor. Then you
+    cut and paste that output into the appropriate section below.
+*/
+
+//In-built signal output Pin for IR Emitter is 3.
+
+#include <IRLibSendBase.h>    //We need the base code
+#include <IRLib_HashRaw.h>    //Only use raw sender
+#include <dht.h>
+
+#define dht_apin A0 // Analog Pin sensor is connected to
+int ACpoweronstate = 0   ;
+
+dht DHT;
+
+IRsendRaw mySender;
+
+#define RAW_DATA_LEN 60
+uint16_t rawDataOn[RAW_DATA_LEN]={
+  3066, 9602, 462, 1558, 462, 538, 434, 562, 
+  434, 566, 438, 1574, 466, 538, 434, 574, 
+  462, 542, 442, 558, 438, 558, 434, 566, 
+  458, 546, 438, 570, 438, 558, 466, 542, 
+  462, 550, 434, 1562, 466, 1538, 462, 1558, 
+  438, 570, 466, 538, 486, 1534, 466, 550, 
+  434, 562, 434, 566, 438, 558, 434, 1578, 
+  442, 558, 438, 1000};
+
+#define RAW_DATA_LEN 60
+uint16_t rawDataOff[RAW_DATA_LEN]={
+  3034, 9554, 490, 1526, 434, 570, 462, 546, 
+  438, 562, 434, 1566, 494, 514, 438, 558, 
+  438, 570, 434, 1578, 462, 1550, 466, 546, 
+  438, 562, 434, 562, 494, 514, 438, 558, 
+  438, 570, 462, 534, 442, 558, 434, 566, 
+  430, 566, 438, 558, 434, 1566, 466, 538, 
+  434, 1562, 466, 546, 438, 562, 434, 570, 
+  434, 1562, 486, 1000};
+
+void setup() {
+  Serial.begin(9600);
+  delay(2000);
+  while (!Serial); //delay for Leonardo
+  Serial.println("LG AC Management System. Initalizing...\n\n");
+
+  pinMode(5, OUTPUT);
+}
+
+void loop() {
+
+  DHT.read11(dht_apin);
+  int temp = DHT.temperature;
+  int humidityvalue = DHT.humidity;
+  Serial.print("Temperature = ");
+  Serial.print(temp);
+  Serial.println(" C");
+  Serial.print("Humidity = ");
+  Serial.print(humidityvalue);
+  Serial.println(" gm per m3");
+  if (temp > 30 && ACpoweronstate == 0) {
+    mySender.send(rawDataOn, RAW_DATA_LEN, 36); //Pass the buffer,length, optionally frequency
+    Serial.println(F("AC Switched On"));
+    ACpoweronstate = 1;
+    analogWrite(5, 200);
+  }
+
+  if (temp <= 29 && ACpoweronstate == 1) {
+    mySender.send(rawDataOff, RAW_DATA_LEN, 36); //Pass the buffer,length, optionally frequency
+    Serial.println(F("AC Switched Off"));
+    ACpoweronstate = 0;
+    analogWrite(5, 150);
+  }
+  delay(10000);
+  analogWrite(5, 0);
+}
